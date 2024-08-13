@@ -1,4 +1,4 @@
-const {Clock} = require('../clock');
+const Clock = require('../clock');
 
 describe('Clock class', () => {
 
@@ -68,21 +68,22 @@ describe('Clock class', () => {
 
     describe('Clock class tests', () => {
         beforeAll(() => {
-            jest.useFakeTimers(); // שימוש בטיימרים פיקטיביים
+            jest.useFakeTimers();
         });
 
         afterEach(() => {
-            jest.clearAllTimers(); // ניקוי כל הטיימרים לאחר כל טסט
+            jest.clearAllTimers();
         });
 
         test.each([
+            //  time                              start   expected  delay
             [{hours: 1, minutes: 5, seconds: 30}, false, "01:05:30", 3000],
             [{hours: 1, minutes: 5, seconds: 30}, true, "01:05:33", 3000],
             [{hours: 40, minutes: 5, seconds: 30}, true, "00:00:02", 3000],
-        ])("ctor time = %s, auto start = %s, expectedTime = %s, delay = %s", (time, autoStart, expectedTime, milliseconds) => {
-
+        ])("constructor time = %s, auto start = %s, expectedTime = %s, delay = %s", (time, autoStart, expectedTime, milliseconds) => {
             const clock = new Clock(time, autoStart);
             jest.advanceTimersByTime(milliseconds);
+
             expect(clock.toString()).toBe(expectedTime);
         });
 
@@ -91,10 +92,17 @@ describe('Clock class', () => {
             [{hours: 1, minutes: 5, seconds: 30}, false, "01:05:33", 3000],
             [{hours: 40, minutes: 5, seconds: 30}, false, "00:00:02", 3000],
         ])("start time = %s, auto start = %s, expectedTime = %s, delay = %s", (time, autoStart, expectedTime, milliseconds) => {
-
             const clock = new Clock(time, autoStart);
-            clock.start();
+            const startTime = clock.toString();
+
             jest.advanceTimersByTime(milliseconds);
+            //check the timer don't start before execute
+            expect(clock.toString()).toBe(startTime);
+
+            clock.start();
+
+            jest.advanceTimersByTime(milliseconds);
+            //check the timer start after execute
             expect(clock.toString()).toBe(expectedTime);
         });
 
@@ -102,13 +110,20 @@ describe('Clock class', () => {
             [{hours: 10, minutes: 50, seconds: 35}, false, "10:50:50", 15000],
             [{hours: 1, minutes: 5, seconds: 30}, false, "01:05:33", 3000],
             [{hours: 40, minutes: 5, seconds: 30}, false, "00:00:02", 3000],
-        ])("start time = %s, auto start = %s, expectedTime = %s, delay = %s", (time, autoStart, expectedTime, milliseconds) => {
-
+        ])("pause time = %s, auto start = %s, expectedTime = %s, delay = %s", (time, autoStart, expectedTime, milliseconds) => {
             const clock = new Clock(time, autoStart);
+            const startTime = clock.toString();
+
             clock.start();
+
             jest.advanceTimersByTime(milliseconds);
+            //check if the timer really start after execute
+            expect(clock.toString()).not.toBe(startTime);
+
             clock.pause();
+
             jest.advanceTimersByTime(milliseconds);
+            //check if the timer pause
             expect(clock.toString()).toBe(expectedTime);
         });
 

@@ -1,4 +1,4 @@
-const {Stopper} = require('..//stopper');
+const Stopper = require('..//stopper');
 
 describe('Stopper class', () => {
 
@@ -68,79 +68,100 @@ describe('Stopper class', () => {
 
     describe('stopper class tests', () => {
         beforeAll(() => {
-            jest.useFakeTimers(); // שימוש בטיימרים פיקטיביים
+            jest.useFakeTimers();
         });
 
         afterEach(() => {
-            jest.clearAllTimers(); // ניקוי כל הטיימרים לאחר כל טסט
+            jest.clearAllTimers();
         });
 
         test.each([
             [false, "00:00:00", 3000],
             [true, "00:00:03", 3000],
             [true, "00:00:30", 30000],
-        ])("ctor start = 00:00:00, auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime, milliseconds) => {
+        ])("constructor start = 00:00:00, auto start = %s, expectedTime = %s, delay = %s",
+            (autoStart, expectedTime, milliseconds) => {
+                const stopper = new Stopper(autoStart);
+                jest.advanceTimersByTime(milliseconds);
 
-            const stopper = new Stopper(autoStart);
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime);
-        });
-
-        test.each([
-            [false, "00:00:03", 3000],
-            [true, "00:00:30", 30000],
-
-        ])("start method : start = 00:00:00, auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime, milliseconds) => {
-
-            const stopper = new Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime);
-        });
+                expect(stopper.toString()).toBe(expectedTime);
+            });
 
         test.each([
             [false, "00:00:03", 3000],
-            [true, "00:00:30", 30000],
-        ])("pause method: auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime, milliseconds) => {
+            [false, "00:00:30", 30000],
+        ])("start method : start = 00:00:00, auto start = %s, expectedTime = %s, delay = %s",
+            (autoStart, expectedTime, milliseconds) => {
+                const stopper = new Stopper(autoStart);
+                const startingTime = stopper.toString();
 
-            const stopper = new  Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            stopper.pause();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime);
-        });
+                jest.advanceTimersByTime(milliseconds);
+                // check before start that not change
+                expect(stopper.toString()).toBe(startingTime);
+
+                stopper.start();
+
+                jest.advanceTimersByTime(milliseconds);
+                // check after start that there is change
+                expect(stopper.toString()).toBe(expectedTime);
+            });
+
+        test.each([
+            [false, "00:00:03", 3000],
+            [false, "00:00:30", 30000],
+        ])("pause method: auto start = %s, expectedTime = %s, delay = %s",
+            (autoStart, expectedTime, milliseconds) => {
+                const stopper = new Stopper(autoStart);
+                const startingTime = stopper.toString();
+
+                stopper.start();
+
+                jest.advanceTimersByTime(milliseconds);
+                //check if the timer really start after execute
+                expect(stopper.toString()).not.toBe(startingTime);
+
+                stopper.pause();
+
+                jest.advanceTimersByTime(milliseconds);
+                //check if the timer pause
+                expect(stopper.toString()).toBe(expectedTime);
+            });
+
+        test.each([
+            [false, "00:00:03", 3000],
+            [false, "00:00:30", 30000],
+            [false, "00:05:24", 324000],
+        ])("reset method :  auto start = %s, expectedTime = %s, delay = %s",
+            (autoStart, expectedTime, milliseconds) => {
+                const stopper = new Stopper(autoStart);
+
+                stopper.start();
+
+                jest.advanceTimersByTime(milliseconds);
+                expect(stopper.toString()).toBe(expectedTime);
+
+                stopper.reset();
+                expect(stopper.toString()).toBe("00:00:00");
+            });
 
         test.each([
             [false, "00:00:03", 3000],
             [false, "00:00:30", 30000],
             [false, "00:05:24", 324000],
 
-        ])("reset method :  auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime1, milliseconds) => {
+        ])("stop method :  auto start = %s, expectedTime = %s, delay = %s",
+            (autoStart, expectedTime, milliseconds) => {
+                const stopper = new Stopper(autoStart);
+                stopper.start();
 
-            const stopper = new  Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime1);
-            stopper.reset();
-            expect(stopper.toString()).toBe("00:00:00");
-        });
+                jest.advanceTimersByTime(milliseconds);
+                expect(stopper.toString()).toBe(expectedTime);
 
-        test.each([
-            [false, "00:00:03", 3000],
-            [false, "00:00:30", 30000],
-            [false, "00:05:24", 324000],
+                stopper.stop();
+                expect(stopper.toString()).toBe(expectedTime);
 
-        ])("stop method :  auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime1, milliseconds) => {
-
-            const stopper = new  Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime1);
-            stopper.stop();
-            expect(stopper.toString()).toBe(expectedTime1);
-            stopper.start();
-            expect(stopper.toString()).toBe("00:00:00");
-        });
+                stopper.start();
+                expect(stopper.toString()).toBe("00:00:00");
+            });
     });
 })

@@ -1,4 +1,4 @@
-const {CountDown} = require('../countDown');
+const CountDown = require('../countDown');
 
 describe('CountDown class', () => {
 
@@ -83,71 +83,96 @@ describe('CountDown class', () => {
             [{hours: -1, minutes: 0, seconds: 0}, "00:00:00"],
             [{hours: 100, minutes: 0, seconds: 0}, "99:59:59"],
             [{}, "Time must be specified"],
-        ])("ctor start = 00:00:00, auto start = %s, expectedTime = %s, delay = %s", (time, expectedTime) => {
-            try {
+        ])("constructor :  start = %s, expectedTime = %s",
+            (time, expectedTime) => {
+                try {
+                    const countDown = new CountDown(time);
+                    expect(countDown.toString()).toBe(expectedTime);
+                } catch (e) {
+                    expect(e.message).toBe(expectedTime);
+                }
+            });
+
+        test.each([
+            [{seconds: 6}, "00:00:03", 3000],
+            [{minutes: 1}, "00:00:30", 30000],
+        ])("start method :time = %s expectedTime = %s, delay = %s",
+            (time, expectedTime, milliseconds) => {
                 const countDown = new CountDown(time);
+                const startingTime = countDown.toString();
+
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).toBe(startingTime);
+
+                countDown.start();
+
+                jest.advanceTimersByTime(milliseconds);
                 expect(countDown.toString()).toBe(expectedTime);
-            }
-            catch (e) {
-                expect(e.message).toBe(expectedTime);
-            }
-        });
+            });
 
         test.each([
-            [false, "00:00:03", 3000],
-            [true, "00:00:30", 30000],
+            [{seconds: 6}, "00:00:03", 3000],
+            [{minutes: 1}, "00:00:30", 30000],
+        ])("pause method: start = %s, expectedTime = %s delay = %s",
+            (time, expectedTime, milliseconds) => {
+                const countDown = new CountDown(time);
+                const countDownEnd = "00:00:00";
 
-        ])("start method : start = 00:00:00, auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime, milliseconds) => {
+                countDown.start();
+                jest.advanceTimersByTime(milliseconds);
+                countDown.pause();
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).toBe(expectedTime);
 
-            const stopper = new Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime);
-        });
-
-        test.each([
-            [false, "00:00:03", 3000],
-            [true, "00:00:30", 30000],
-        ])("pause method: auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime, milliseconds) => {
-
-            const stopper = new Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            stopper.pause();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime);
-        });
+                countDown.start();
+                jest.advanceTimersByTime(milliseconds);
+                countDown.pause();
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).toBe(countDownEnd);
+            });
 
         test.each([
-            [false, "00:00:03", 3000],
-            [false, "00:00:30", 30000],
-            [false, "00:05:24", 324000],
+            [{seconds: 3}, "00:00:03", 3000],
+            [{seconds: 30}, "00:00:30", 30000],
+            [{minutes: 5, seconds: 24}, "00:05:24", 324000],
+        ])("reset method :  start = %s, expectedTime = %s, delay = %s",
+            (time, expectedTime, milliseconds) => {
+                const countDown = new CountDown(time);
+                const startingTime = countDown.toString();
 
-        ])("reset method :  auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime1, milliseconds) => {
+                countDown.start();
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).not.toBe(startingTime);
 
-            const stopper = new Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime1);
-            stopper.reset();
-            expect(stopper.toString()).toBe("00:00:00");
-        });
+                countDown.pause();
+                countDown.reset();
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).toBe(expectedTime);
+            });
 
         test.each([
-            [false, "00:00:03", 3000],
-            [false, "00:00:30", 30000],
-            [false, "00:05:24", 324000],
+            [{seconds: 3}, 3000],
+            [{seconds: 30}, 30000],
+            [{minutes: 5, seconds: 24}, 324000],
+        ])("stop method :  start = %s, delay = %s",
+            (time, milliseconds) => {
+                const countDown = new CountDown(time);
+                const startingTime = countDown.toString();
 
-        ])("stop method :  auto start = %s, expectedTime = %s, delay = %s", (autoStart, expectedTime1, milliseconds) => {
+                countDown.start();
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).not.toBe(startingTime);
 
-            const stopper = new Stopper(autoStart);
-            stopper.start();
-            jest.advanceTimersByTime(milliseconds);
-            expect(stopper.toString()).toBe(expectedTime1);
-            stopper.stop();
-            expect(stopper.toString()).toBe(expectedTime1);
-            stopper.start();
-            expect(stopper.toString()).toBe("00:00:00");
-        });
+                const currentTime = countDown.toString();
+                countDown.stop();
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).toBe(currentTime);
+
+                countDown.start();
+                expect(countDown.toString()).toBe(startingTime);
+
+                jest.advanceTimersByTime(milliseconds);
+                expect(countDown.toString()).not.toBe(startingTime);
+            });
     });
 })
